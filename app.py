@@ -12,7 +12,7 @@ st.write("Faça o upload de uma foto e nossa Inteligência Artificial dirá qual
 # 2. Carregando o modelo salvo (O @st.cache_resource evita carregar o modelo pesado toda vez)
 @st.cache_resource
 def carregar_modelo():
-    return tf.keras.models.load_model('modelo_flores.keras')
+    return tf.keras.models.load_model('modelo_flores.keras', compile=False)
 
 modelo = carregar_modelo()
 
