@@ -12,8 +12,18 @@ st.write("Faça o upload de uma foto e nossa Inteligência Artificial dirá qual
 # 2. Carregando o modelo salvo (O @st.cache_resource evita carregar o modelo pesado toda vez)
 @st.cache_resource
 def carregar_modelo():
-    return tf.keras.models.load_model('modelo_flores.keras', compile=False)
-
+    # Criamos um "filtro" para ignorar o parâmetro problemático do Colab
+    class DenseSeguro(tf.keras.layers.Dense):
+        def __init__(self, **kwargs):
+            kwargs.pop('quantization_config', None) # Remove o vilão da história
+            super().__init__(**kwargs)
+            
+    # Carregamos o modelo avisando para usar o nosso filtro sempre que achar uma camada 'Dense'
+    return tf.keras.models.load_model(
+        'modelo_flores.keras', 
+        compile=False,
+        custom_objects={'Dense': DenseSeguro}
+    )
 modelo = carregar_modelo()
 
 # 3. Lista com os nomes das flores (Abaixo é um exemplo, você precisará colar os 102 nomes reais aqui)
