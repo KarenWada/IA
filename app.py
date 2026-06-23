@@ -4,6 +4,17 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from PIL import Image
 import numpy as np
 
+# --- O HACK DEFINITIVO (MONKEY PATCHING) ---
+# Interceptamos a classe Dense original do TensorFlow na memória do servidor.
+# Ensinamos ela a deletar o 'quantization_config' antes de tentar se construir.
+original_dense_init = tf.keras.layers.Dense.__init__
+
+def patched_dense_init(self, *args, **kwargs):
+    kwargs.pop('quantization_config', None) # O vilão morre aqui
+    original_dense_init(self, *args, **kwargs)
+
+tf.keras.layers.Dense.__init__ = patched_dense_init
+
 # 1. Configuração visual básica do site
 st.set_page_config(page_title="Classificador de Flores", page_icon="🌻")
 st.title("Descubra que flor é essa 🌻")
