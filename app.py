@@ -4,7 +4,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from PIL import Image
 import numpy as np
 
-# --- O HACK DEFINITIVO (MONKEY PATCHING) ---
+# --- O  DEFINITIVO (MONKEY PATCHING) ---
 # Interceptamos a classe Dense original do TensorFlow na memória do servidor.
 # Ensinamos ela a deletar o 'quantization_config' antes de tentar se construir.
 original_dense_init = tf.keras.layers.Dense.__init__
@@ -24,7 +24,7 @@ st.write("Faça o upload de uma foto e nossa Inteligência Artificial dirá qual
 # 2. Carregando o modelo salvo
 @st.cache_resource
 def carregar_modelo():
-    return tf.keras.models.load_model('modelo_flores.keras', compile=False)
+    return tf.keras.models.load_model('melhor_modelo_flores.keras', compile=False)
 
 modelo = carregar_modelo()
 
