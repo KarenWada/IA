@@ -4,13 +4,11 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from PIL import Image
 import numpy as np
 
-# --- O  DEFINITIVO (MONKEY PATCHING) ---
-# Interceptamos a classe Dense original do TensorFlow na memória do servidor.
-# Ensinamos ela a deletar o 'quantization_config' antes de tentar se construir.
+# --- O HACK DEFINITIVO (MONKEY PATCHING) ---
 original_dense_init = tf.keras.layers.Dense.__init__
 
 def patched_dense_init(self, *args, **kwargs):
-    kwargs.pop('quantization_config', None) # O vilão morre aqui
+    kwargs.pop('quantization_config', None)
     original_dense_init(self, *args, **kwargs)
 
 tf.keras.layers.Dense.__init__ = patched_dense_init
@@ -20,7 +18,6 @@ st.set_page_config(page_title="Classificador de Flores", page_icon="🌻")
 st.title("Descubra que flor é essa 🌻")
 st.write("Faça o upload de uma foto e nossa Inteligência Artificial dirá qual é a espécie!")
 
-# 2. Carregando o modelo salvo (O @st.cache_resource evita carregar o modelo pesado toda vez)
 # 2. Carregando o modelo salvo
 @st.cache_resource
 def carregar_modelo():
@@ -28,8 +25,9 @@ def carregar_modelo():
 
 modelo = carregar_modelo()
 
-# 3. Lista com os nomes das flores (Abaixo é um exemplo, você precisará colar os 102 nomes reais aqui)
-nomes_flores = ['Pink Primrose', 'Hard-Leaved Pocket Orchid', 'Canterbury Bells','Sweet Pea',
+# 3. Lista com os nomes das flores
+nomes_flores = [
+    'Pink Primrose', 'Hard-Leaved Pocket Orchid', 'Canterbury Bells','Sweet Pea',
     'English Marigold','Tiger Lily', 'Moon Orchid','Bird Of Paradise','Monkshood',
     'Globe Thistle', 'Snapdragon','ColtS Foot','King Protea','Spear Thistle', 'Yellow Iris',
     'Globe-Flower','Purple Coneflower','Peruvian Lily','Balloon Flower','Giant White Arum Lily',
@@ -47,23 +45,37 @@ nomes_flores = ['Pink Primrose', 'Hard-Leaved Pocket Orchid', 'Canterbury Bells'
     'Gazania','Azalea','Water Lily','Rose','Thorn Apple','Morning Glory','Passion Flower','Lotus',
     'Toad Lily','Anthurium','Frangipani','Clematis','Hibiscus','Columbine','Desert-Rose','Tree Mallow',
     'Magnolia','Cyclamen','Watercress','Canna Lily','Hippeastrum','Bee Balm','Ball Moss',
-    'Foxglove','Bougainvillea','Camellia','Mallow','Mexican Petunia','Bromelia','Blanket Flower','Trumpet Creeper','Blackberry Lily']
+    'Foxglove','Bougainvillea','Camellia','Mallow','Mexican Petunia','Bromelia','Blanket Flower','Trumpet Creeper','Blackberry Lily'
+]
+
+# --- NOVAS MELHORIAS DE UX (INTERFACE DO USUÁRIO) ---
+
+# Aviso Importante
+st.warning("⚠️ **Aviso:** Se a flor que você está enviando não estiver na nossa lista de espécies conhecidas, o resultado sairá errado e a Inteligência Artificial tentará adivinhar a flor mais parecida com ela.")
+
+# Menu expansível com a lista de flores em ordem alfabética
+with st.expander("Ver lista das 102 flores suportadas"):
+    flores_ordenadas = sorted(nomes_flores)
+    st.write(" O modelo foi treinado exclusivamente para reconhecer estas espécies:")
+    st.write(" • " + "\n • ".join(flores_ordenadas))
+
+st.divider() # Linha de separação visual
 
 # 4. Botão de Upload
 arquivo_foto = st.file_uploader("Escolha a foto da flor", type=["jpg", "jpeg", "png"])
 
 if arquivo_foto is not None:
-    # Mostra a imagem que o usuário enviou na tela
+    # Mostra a imagem
     imagem = Image.open(arquivo_foto)
     st.image(imagem, caption='Sua Flor', use_container_width=True)
 
     st.write("🧠 Analisando...")
 
-    # 5. Pré-processamento (A foto do site tem que sofrer a mesma matemática do Colab)
+    # 5. Pré-processamento
     img_redimensionada = imagem.resize((224, 224))
     img_array = tf.keras.utils.img_to_array(img_redimensionada)
-    img_array = tf.expand_dims(img_array, 0) # Cria o "lote" de 1 imagem só
-    img_array = preprocess_input(img_array)  # Matemática da VGG16
+    img_array = tf.expand_dims(img_array, 0)
+    img_array = preprocess_input(img_array)
 
     # 6. A Predição
     previsoes = modelo.predict(img_array)
@@ -72,6 +84,15 @@ if arquivo_foto is not None:
 
     flor_predita = nomes_flores[indice_classe].title()
 
-    # 7. Exibindo o Resultado Bonito
-    st.success(f"**Resultado:** Esta flor parece ser uma {flor_predita}!")
-    st.info(f"**Certeza do Modelo:** {certeza:.1f}%")
+    # 7. Lógica de Resposta Baseada na Certeza
+    if certeza >= 99.9: # Usamos 99.9 porque é muito raro dar 100% cravado matematicamente
+        st.success(f"🎉 Sua flor é **{flor_predita}**")
+    elif certeza >= 75.0:
+        st.success(f"✅ Sua flor com quase certeza é **{flor_predita}**")
+    elif certeza >= 50.0:
+        st.warning(f"🤔 Sua flor talvez seja: **{flor_predita}**")
+    else:
+        st.error(f"🤷‍♂️ Não temos certeza, mas achamos que é **{flor_predita}**")
+
+    # Exibindo a porcentagem técnica abaixo da mensagem
+    st.info(f"**Certeza matemática do Modelo:** {certeza:.2f}%")
