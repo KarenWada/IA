@@ -4,7 +4,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 from PIL import Image
 import numpy as np
 
-# --- O HACK DEFINITIVO (MONKEY PATCHING) ---
+# MONKEY PATCHING
 original_dense_init = tf.keras.layers.Dense.__init__
 
 def patched_dense_init(self, *args, **kwargs):
@@ -48,12 +48,9 @@ nomes_flores = [
     'Foxglove','Bougainvillea','Camellia','Mallow','Mexican Petunia','Bromelia','Blanket Flower','Trumpet Creeper','Blackberry Lily'
 ]
 
-# --- NOVAS MELHORIAS DE UX (INTERFACE DO USUÁRIO) ---
 
-# Aviso Importante
 st.warning("⚠️ **Aviso:** Se a flor que você está enviando não estiver na nossa lista de espécies conhecidas, o resultado sairá errado e a Inteligência Artificial tentará adivinhar a flor mais parecida com ela.")
 
-# Menu expansível com a lista de flores em ordem alfabética
 with st.expander("Ver lista das 102 flores suportadas"):
     flores_ordenadas = sorted(nomes_flores)
     st.write(" O modelo foi treinado exclusivamente para reconhecer estas espécies:")
@@ -61,11 +58,9 @@ with st.expander("Ver lista das 102 flores suportadas"):
 
 st.divider() # Linha de separação visual
 
-# 4. Botão de Upload
 arquivo_foto = st.file_uploader("Escolha a foto da flor", type=["jpg", "jpeg", "png"])
 
 if arquivo_foto is not None:
-    # Mostra a imagem
     imagem = Image.open(arquivo_foto)
     st.image(imagem, caption='Sua Flor', use_container_width=True)
 
@@ -94,5 +89,4 @@ if arquivo_foto is not None:
     else:
         st.error(f"🤷‍♂️ Não temos certeza, mas achamos que é **{flor_predita}**")
 
-    # Exibindo a porcentagem técnica abaixo da mensagem
     st.info(f"**Certeza matemática do Modelo:** {certeza:.2f}%")
